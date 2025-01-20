@@ -1,0 +1,29 @@
+{
+  "authSelections": "userPoolOnly",
+  "resourceName": "95rentals592cc5c2",
+  "serviceType": "imported",
+  "region": "ap-south-1",
+  "usernameAttributes": [
+    "phone_number"
+  ],
+  "authProvidersUserPool": [],
+  "requiredAttributes": [
+    "gender",
+    "updated_at",
+    "phone_number",
+    "given_name",
+    "family_name"
+  ],
+  "passwordPolicyMinLength": 8,
+  "passwordPolicyCharacters": [
+    "Requires Lowercase",
+    "Requires Uppercase",
+    "Requires Numbers",
+    "Requires Symbols"
+  ],
+  "mfaConfiguration": "OFF",
+  "autoVerifiedAttributes": [
+    "phone_number"
+  ],
+  "mfaTypes": []
+}

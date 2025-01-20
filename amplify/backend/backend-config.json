@@ -1,0 +1,45 @@
+{
+  "auth": {
+    "95rentals592cc5c2": {
+      "customAuth": false,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Cognito",
+      "serviceType": "imported"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_auth_95rentals592cc5c2_nativeClientId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "95rentals592cc5c2"
+        }
+      ]
+    },
+    "AMPLIFY_auth_95rentals592cc5c2_userPoolId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "95rentals592cc5c2"
+        }
+      ]
+    },
+    "AMPLIFY_auth_95rentals592cc5c2_userPoolName": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "95rentals592cc5c2"
+        }
+      ]
+    },
+    "AMPLIFY_auth_95rentals592cc5c2_webClientId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "95rentals592cc5c2"
+        }
+      ]
+    }
+  }
+}
