@@ -1,49 +1,30 @@
-import Auth from 'aws-amplify/auth';
+import {
+  signUp,
+  confirmSignUp,
+  type ConfirmSignUpInput,
+  signIn,
+} from "aws-amplify/auth";
 
-
-// signUp, signIn using Mobile number
-export async function signUpWithMobileNumber(mobileNumber: string) {
-  try {
-    const user = await Auth.signUp({
-      username: "+91" + mobileNumber,
-      password: 'password',
-      options: {
-        userAttributes: {
-          phone_number: "91" + mobileNumber
-        }
-      }
-    });
-    console.log({ user });
-    return user;
-  } catch (error) {
-    console.error({ error });
-    return error;
-  }
+export function awsSignIn(phone: string) {
+  return signIn({ username: "+91" + phone, password: "Rentals@123" });
 }
 
-export async function signInWithMobileNumber(mobileNumber: string) {
-  try {
-    const user = await Auth.signIn({
-        username: "+91" + mobileNumber,
-    });
-    console.log({ user });
-    return user;
-  } catch (error) {
-    console.error({ error });
-    return error;
-  }
+export function awsSignUp(phone: string) {
+  const params = {
+    username: "+91" + phone,
+    password: "Rentals@123",
+    options: {
+      userAttributes: {
+        phone_number: "+91" + phone,
+      },
+    },
+  };
+  return signUp(params);
 }
 
-export async function confirmSignUpWithMobileNumber(mobileNumber: string, code: string) {
-  try {
-    const user = await Auth.confirmSignUp({
-        username: "+91" + mobileNumber,
-        confirmationCode: code
-    });
-    console.log({ user });
-    return user;
-  } catch (error) {
-    console.error({ error });
-    return error;
-  }
+export function confirmCode({
+  username,
+  confirmationCode,
+}: ConfirmSignUpInput) {
+  return confirmSignUp({ username, confirmationCode });
 }
