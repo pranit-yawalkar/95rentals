@@ -19,4 +19,47 @@ model User {
   name      String
   gender    String
   createdAt DateTime  @default(now())
+  rentals   Rental[]  // Relation to Rentals
+}
+
+model Bike {
+  bikeId      String    @id @default(uuid())
+  name        String
+  type        String    // Example: "Scooter", "Motorcycle", "Electric Bike"
+  model       String?
+  specs       String?
+  description String?
+  imageUrl    String?
+  hourlyRate  Float
+  dailyRate   Float
+  features    String[]
+  isAvailable Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  rentals     Rental[]
+}
+
+
+model Rental {
+  rentalId    String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [userId])
+  userId      String
+  bike        Bike     @relation(fields: [bikeId], references: [bikeId])
+  bikeId      String
+  startTime   DateTime
+  endTime     DateTime
+  totalAmount Float
+  status      String   @default("Pending") // "Pending", "Confirmed", "Completed", "Cancelled"
+  payment     Payment?
+
+  createdAt   DateTime @default(now())
+}
+
+model Payment {
+  paymentId    String  @id @default(uuid())
+  rental       Rental  @relation(fields: [rentalId], references: [rentalId])
+  rentalId     String  @unique
+  amount       Float
+  status       String  @default("Pending") // "Pending", "Completed", "Failed"
+  transactionId String?
+  createdAt    DateTime @default(now())
 }

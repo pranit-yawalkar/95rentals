@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     // Generate JWT Token
-    const token = generateJWT(phoneNumber);
+    const token = generateJWT(phoneNumber, user.userId, "user");
     return NextResponse.json(
       { message: "OTP verified", token },
       { status: 200 }

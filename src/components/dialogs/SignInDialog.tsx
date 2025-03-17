@@ -17,7 +17,8 @@ const SignInDialog = ({
   handlePhoneSubmit,
   buttonText,
   isDisabled,
-  errorText
+  errorText,
+  showButton = true,
 }: {
   isSignInDialog: boolean;
   setIsSignInDialog: React.Dispatch<React.SetStateAction<boolean>>;
@@ -27,11 +28,18 @@ const SignInDialog = ({
   buttonText?: string;
   isDisabled?: boolean;
   errorText?: string;
+  showButton?: boolean;
 }) => {
   return (
     <Dialog open={isSignInDialog} onOpenChange={setIsSignInDialog}>
-      <DialogTrigger asChild onClick={() => setPhoneNumber("")}>
-        <Button className="bg-primary hover:bg-primary/90">{buttonText || "Sign In"}</Button>
+      <DialogTrigger
+        style={{ display: showButton ? "block" : "none" }}
+        asChild
+        onClick={() => setPhoneNumber("")}
+      >
+        <Button className="bg-primary hover:bg-primary/90 ml-12">
+          {buttonText || "Sign In"}
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -59,8 +67,12 @@ const SignInDialog = ({
                 required
               />
             </div>
-            <p className={`text-sm text-muted-foreground ${errorText ? "text-red-500" : ""}`}>
-             {errorText} We'll send you an OTP
+            <p
+              className={`text-sm text-muted-foreground ${
+                errorText ? "text-red-500" : ""
+              }`}
+            >
+              {errorText} We'll send you an OTP
             </p>
           </div>
           <Button
