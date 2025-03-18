@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Bike,
@@ -181,6 +181,14 @@ const cities = [
 ];
 
 const BikeSearchPage = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BikeSearchContent />
+    </Suspense>
+  )
+}
+
+const BikeSearchContent = () => {
   const dispatch = useDispatch<any>();
   const searchParams = useSearchParams();
   const router = useRouter();

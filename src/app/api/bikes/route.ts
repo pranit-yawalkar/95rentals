@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 /** Fetch all bikes */
-export async function GET(req: Request, res: Response) {
+export async function GET(req: Request) {
   try {
     // 🔹 Verify the token before proceeding
     const auth = verifyToken(req);
@@ -21,7 +21,7 @@ export async function GET(req: Request, res: Response) {
 }
 
 /** Add a new bike (Admin Only) */
-export async function POST(req: Request, res: Response) {
+export async function POST(req: Request) {
   try {
     const { name, type, model, specs, description, imageUrl, hourlyRate, dailyRate, features } =
       await req.json();
@@ -44,13 +44,4 @@ export async function POST(req: Request, res: Response) {
       { status: 500 }
     );
   }
-}
-
-export default function handler(req: Request, res: Response) {
-  if (req.method === "GET") return GET(req, res);
-  if (req.method === "POST") return POST(req, res);
-  return NextResponse.json(
-    { success: false, message: "Method Not Allowed" },
-    { status: 405 }
-  );
 }

@@ -2,7 +2,7 @@ import { verifyToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma"; // Prisma instance
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request, res: Response) {
+export async function POST(req: Request) {
   try {
     // 🔹 Verify the token before proceeding
     const auth = verifyToken(req);
@@ -59,7 +59,7 @@ export async function POST(req: Request, res: Response) {
   }
 }
 
-export async function GET(req: Request, res: Response) {
+export async function GET(req: Request) {
   try {
     // 🔹 Verify the token before proceeding
     const auth = verifyToken(req);
