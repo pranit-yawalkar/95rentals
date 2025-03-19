@@ -31,6 +31,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { convertTo24HourFormat, formatISTDateTime } from "@/lib/utils";
 
 const LandingPage = () => {
   const router = useRouter();
@@ -64,38 +65,38 @@ const LandingPage = () => {
     {
       name: "Honda Activa",
       image:
-        "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&q=80&w=800",
-      price: "299/day",
-      specs: "110cc | 60kmpl",
+        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/activa.jpg",
+      price: "499/day",
+      specs: "125cc | 50kmpl",
       rating: 4.8,
     },
     {
       name: "Yamaha Fascino",
       image:
-        "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800",
-      price: "349/day",
+        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/yamaha-fascino.jpg",
+      price: "499/day",
       specs: "125cc | 55kmpl",
       rating: 4.9,
     },
     {
-      name: "Suzuki Access 125",
+      name: "Honda Shine 100",
       image:
-        "https://images.unsplash.com/photo-1558981359-219d6364c9c8?auto=format&fit=crop&q=80&w=800",
-      price: "399/day",
-      specs: "125cc | 52kmpl",
+        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/shine_100.jpg",
+      price: "599/day",
+      specs: "100cc | 60kmpl",
       rating: 4.7,
     },
   ];
 
   const cities = [
-    "Mumbai",
-    "Delhi",
-    "Bangalore",
-    "Hyderabad",
-    "Chennai",
-    "Kolkata",
+    // "Mumbai",
+    // "Delhi",
+    // "Bangalore",
+    // "Hyderabad",
+    // "Chennai",
+    // "Kolkata",
     "Pune",
-    "Ahmedabad",
+    "Nashik",
   ];
 
   const timeSlots = [
@@ -121,33 +122,22 @@ const LandingPage = () => {
       return;
     }
   
-    // Convert "10:00 AM" to 24-hour format
-    const convertTo24HourFormat = (time: string) => {
-      const [hours, minutes, period] = time.match(/(\d+):(\d+) (\w+)/)!.slice(1);
-      let hours24 = parseInt(hours, 10);
-      if (period === "PM" && hours24 !== 12) hours24 += 12;
-      if (period === "AM" && hours24 === 12) hours24 = 0;
-      return `${hours24.toString().padStart(2, "0")}:${minutes}`;
-    };
-  
     const startTime24 = convertTo24HourFormat(startTime);
     const endTime24 = convertTo24HourFormat(endTime);
   
-    // Merge date and time
-    const startDateTime = new Date(`${startDate.toISOString().split("T")[0]}T${startTime24}:00Z`);
-    const endDateTime = new Date(`${endDate.toISOString().split("T")[0]}T${endTime24}:00Z`);
+    const startDateTime = formatISTDateTime(startDate, startTime24);
+    const endDateTime = formatISTDateTime(endDate, endTime24);
   
     // Create query params
     const params = new URLSearchParams();
     params.append("city", city);
-    params.append("startDate", startDate.toISOString());
-    params.append("endDate", endDate.toISOString());
-    params.append("startTime", startDateTime.toISOString()); // ✅ Corrected
-    params.append("endTime", endDateTime.toISOString()); // ✅ Corrected
+    params.append("startTime", startDateTime); // ✅ Now in IST
+    params.append("endTime", endDateTime); // ✅ Now in IST
   
     // Navigate to search results page
     router.push(`/search?${params.toString()}`);
   };
+  
   
 
   useEffect(() => {
@@ -361,7 +351,7 @@ const LandingPage = () => {
                   <img
                     src={bike.image}
                     alt={bike.name}
-                    className="w-full h-48 object-cover"
+                    className="w-full h-48 object-contain"
                   />
                   <div className="absolute top-4 right-4 bg-white px-2 py-1 rounded-full flex items-center">
                     <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 mr-1" />
@@ -378,7 +368,7 @@ const LandingPage = () => {
                       ₹{bike.price}
                     </span>
                   </div>
-                  <Button className="w-full bg-primary hover:bg-primary/90">
+                  <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => window.scrollTo(0, 0)}>
                     Book Now
                   </Button>
                 </div>

@@ -46,98 +46,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
 import { getAvailableBikes } from "@/services/bikeService";
 import { fetchAvailableBikes } from "@/store/reducers/bikeSlice";
-
-// Mock data for bikes
-const allBikes = [
-  {
-    id: 1,
-    name: "Honda Activa",
-    model: "Activa 6G",
-    image:
-      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&q=80&w=800",
-    price: 299,
-    specs: "110cc | 60kmpl",
-    rating: 4.8,
-    available: true,
-  },
-  {
-    id: 2,
-    name: "Yamaha Fascino",
-    model: "Fascino 125",
-    image:
-      "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800",
-    price: 349,
-    specs: "125cc | 55kmpl",
-    rating: 4.9,
-    available: true,
-  },
-  {
-    id: 3,
-    name: "Suzuki Access 125",
-    model: "Access 125",
-    image:
-      "https://images.unsplash.com/photo-1558981359-219d6364c9c8?auto=format&fit=crop&q=80&w=800",
-    price: 399,
-    specs: "125cc | 52kmpl",
-    rating: 4.7,
-    available: true,
-  },
-  {
-    id: 4,
-    name: "TVS Jupiter",
-    model: "Jupiter Classic",
-    image:
-      "https://images.unsplash.com/photo-1571325654970-60aa4a2d689c?auto=format&fit=crop&q=80&w=800",
-    price: 329,
-    specs: "110cc | 58kmpl",
-    rating: 4.6,
-    available: true,
-  },
-  {
-    id: 5,
-    name: "Hero Pleasure",
-    model: "Pleasure Plus",
-    image:
-      "https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?auto=format&fit=crop&q=80&w=800",
-    price: 279,
-    specs: "110cc | 63kmpl",
-    rating: 4.5,
-    available: true,
-  },
-  {
-    id: 6,
-    name: "Royal Enfield Classic",
-    model: "Classic 350",
-    image:
-      "https://images.unsplash.com/photo-1615172282427-9a57ef2d142e?auto=format&fit=crop&q=80&w=800",
-    price: 799,
-    specs: "350cc | 35kmpl",
-    rating: 4.9,
-    available: true,
-  },
-  {
-    id: 7,
-    name: "Bajaj Pulsar",
-    model: "Pulsar 150",
-    image:
-      "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?auto=format&fit=crop&q=80&w=800",
-    price: 499,
-    specs: "150cc | 45kmpl",
-    rating: 4.7,
-    available: true,
-  },
-  {
-    id: 8,
-    name: "KTM Duke",
-    model: "Duke 200",
-    image:
-      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?auto=format&fit=crop&q=80&w=800",
-    price: 899,
-    specs: "200cc | 35kmpl",
-    rating: 4.8,
-    available: true,
-  },
-];
+import { convertTo24HourFormat, formatISTDateTime } from "@/lib/utils";
 
 // Available models for filtering
 const bikeModels = [
@@ -170,14 +79,14 @@ const timeSlots = [
 
 // Cities
 const cities = [
-  "Mumbai",
-  "Delhi",
-  "Bangalore",
-  "Hyderabad",
-  "Chennai",
-  "Kolkata",
+  // "Mumbai",
+  // "Delhi",
+  // "Bangalore",
+  // "Hyderabad",
+  // "Chennai",
+  // "Kolkata",
   "Pune",
-  "Ahmedabad",
+  "Nashik",
 ];
 
 const BikeSearchPage = () => {
@@ -185,11 +94,12 @@ const BikeSearchPage = () => {
     <Suspense fallback={<div>Loading...</div>}>
       <BikeSearchContent />
     </Suspense>
-  )
-}
+  );
+};
 
 const BikeSearchContent = () => {
   const dispatch = useDispatch<any>();
+  const [isFetched, setIsFetched] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -200,8 +110,8 @@ const BikeSearchContent = () => {
     city: "",
     startDate: new Date(),
     endDate: new Date(),
-    startTime: "",
-    endTime: "",
+    startTime: new Date(),
+    endTime: new Date(),
   });
 
   // Filter state
@@ -210,20 +120,20 @@ const BikeSearchContent = () => {
   const [sortOption, setSortOption] = useState("recommended");
   const [filteredBikes, setFilteredBikes] = useState<any[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  console.log(filteredBikes, "filteredBikes");
+  console.log(params, "filteredBikes");
   // Initialize search parameters from URL
   useEffect(() => {
     if (searchParams) {
       const cityParam = searchParams.get("city");
-      const startDateParam = searchParams.get("startDate");
-      const endDateParam = searchParams.get("endDate");
+      // const startDateParam = searchParams.get("startDate");
+      // const endDateParam = searchParams.get("endDate");
       const startTimeParam = searchParams.get("startTime");
       const endTimeParam = searchParams.get("endTime");
 
       if (
         cityParam &&
-        startDateParam &&
-        endDateParam &&
+        // startDateParam &&
+        // endDateParam &&
         startTimeParam &&
         endTimeParam
       ) {
@@ -235,23 +145,29 @@ const BikeSearchContent = () => {
           city: cityParam,
           startDate: startDateTime,
           endDate: endDateTime,
-          startTime: startDateTime.toISOString(), // ✅ Already in ISO format
-          endTime: endDateTime.toISOString(), // ✅ Already in ISO format
+          startTime: startDateTime, // ✅ Already in ISO format
+          endTime: endDateTime, // ✅ Already in ISO format
         });
       }
     }
   }, [searchParams]);
 
   useEffect(() => {
-    if (params.startTime && params.endTime) {
+    if (params.startTime && params.endTime && !isFetched) {
+      // Convert IST to UTC
+      const startUTC = new Date(params.startTime).toISOString();
+      const endUTC = new Date(params.endTime).toISOString();
+
       dispatch(
         fetchAvailableBikes({
-          startTime: params.startTime,
-          endTime: params.endTime,
+          startTime: startUTC,
+          endTime: endUTC,
         })
-      );
+      ).then(() => {
+        setIsFetched(true);
+      });
     }
-  }, [params]);
+  }, [params, isFetched]);
 
   // Apply filters and sorting
   useEffect(() => {
@@ -259,7 +175,8 @@ const BikeSearchContent = () => {
 
     // Filter by price
     result = result.filter(
-      (bike) => bike.dailyRate >= priceRange[0] && bike.dailyRate <= priceRange[1]
+      (bike) =>
+        bike.dailyRate >= priceRange[0] && bike.dailyRate <= priceRange[1]
     );
 
     // Filter by model
@@ -301,12 +218,21 @@ const BikeSearchContent = () => {
       alert("Please fill all the search fields");
       return;
     }
+
+    const startTime24 = convertTo24HourFormat(
+      format(params.startTime, "hh:mm aa")
+    );
+    const endTime24 = convertTo24HourFormat(format(params.endTime, "hh:mm aa"));
+
+    const startDateTime = formatISTDateTime(params.startDate, startTime24);
+    const endDateTime = formatISTDateTime(params.endDate, endTime24);
+
     const updatedParams = new URLSearchParams();
     updatedParams.append("city", params.city);
-    updatedParams.append("startDate", params.startDate.toISOString());
-    updatedParams.append("endDate", params.endDate.toISOString());
-    updatedParams.append("startTime", params.startTime);
-    updatedParams.append("endTime", params.endTime);
+    // updatedParams.append("startDate", params.startDate.toISOString());
+    // updatedParams.append("endDate", params.endDate.toISOString());
+    updatedParams.append("startTime", startDateTime);
+    updatedParams.append("endTime", endDateTime);
     console.log(updatedParams.toString(), "updatedParams");
     router.push(`/search?${updatedParams.toString()}`);
   };
@@ -403,10 +329,21 @@ const BikeSearchContent = () => {
               <Label>Time</Label>
               <div className="flex space-x-2">
                 <Select
-                  value={params.startTime}
-                  onValueChange={(value) =>
-                    setParams({ ...params, startTime: value })
-                  }
+                  value={format(params.startDate, "hh:mm aa")}
+                  onValueChange={(value) => {
+                    const [hours, minutes, period] = value
+                      .match(/(\d+):(\d+) (\w+)/)!
+                      .slice(1);
+                    let hours24 = parseInt(hours, 10);
+                    if (period === "PM" && hours24 !== 12) hours24 += 12;
+                    if (period === "AM" && hours24 === 12) hours24 = 0;
+
+                    // Combine with existing date
+                    const updatedStartDate = new Date(params.startDate);
+                    updatedStartDate.setHours(hours24, parseInt(minutes), 0, 0);
+
+                    setParams({ ...params, startTime: updatedStartDate });
+                  }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pickup" />
@@ -421,10 +358,21 @@ const BikeSearchContent = () => {
                 </Select>
 
                 <Select
-                  value={params.endTime}
-                  onValueChange={(value) =>
-                    setParams({ ...params, endTime: value })
-                  }
+                  value={format(params.endDate, "hh:mm aa")}
+                  onValueChange={(value) => {
+                    const [hours, minutes, period] = value
+                      .match(/(\d+):(\d+) (\w+)/)!
+                      .slice(1);
+                    let hours24 = parseInt(hours, 10);
+                    if (period === "PM" && hours24 !== 12) hours24 += 12;
+                    if (period === "AM" && hours24 === 12) hours24 = 0;
+
+                    // Combine with existing date
+                    const updatedEndDate = new Date(params.endDate);
+                    updatedEndDate.setHours(hours24, parseInt(minutes), 0, 0);
+
+                    setParams({ ...params, endTime: updatedEndDate });
+                  }}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Return" />

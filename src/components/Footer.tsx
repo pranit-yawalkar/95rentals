@@ -14,8 +14,8 @@ const Footer = () => {
               <span className="text-2xl font-bold ml-2">95BikeRentals</span>
             </div>
             <p className="text-gray-400">
-              Your trusted partner for premium bike and scooter rentals in the
-              city.
+              Your trusted bike and scooter rentals in the city. Book your perfect
+              ride now!
             </p>
           </div>
           <div>
@@ -52,7 +52,7 @@ const Footer = () => {
             <div className="space-y-4">
               <div className="flex items-center">
                 <Phone className="w-5 h-5 text-primary mr-2" />
-                <span className="text-gray-400">+91 95000 00000</span>
+                <span className="text-gray-400">+91 78419 42095</span>
               </div>
               <p className="text-gray-400">
                 Available 24/7 for your assistance
@@ -61,7 +61,7 @@ const Footer = () => {
           </div>
         </div>
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
-          © 2024 95BikeRentals. All rights reserved.
+          © {new Date().getFullYear()} 95BikeRentals. All rights reserved.
         </div>
       </div>
     </footer>
