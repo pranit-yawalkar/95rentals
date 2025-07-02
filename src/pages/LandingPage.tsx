@@ -31,12 +31,19 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { convertTo24HourFormat, formatISTDateTime } from "@/lib/utils";
+import {
+  convertTo24HourFormat,
+  convertToIST,
+  formatISTDateTime,
+} from "@/lib/utils";
+import { useDispatch } from "react-redux";
+import { getUserData } from "@/store/reducers/userSlice";
+import { useLoading } from "@/context/LoadingContext";
 
 const LandingPage = () => {
   const router = useRouter();
-
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<any>();
+  const { setLoading } = useLoading();
 
   const [city, setCity] = useState("");
   const [startDate, setStartDate] = useState<Date>();
@@ -64,24 +71,23 @@ const LandingPage = () => {
   const popularBikes = [
     {
       name: "Honda Activa",
-      image:
-        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/activa.jpg",
+      image: "https://95rentalsimages.s3.ap-south-1.amazonaws.com/new/activa.jpg",
       price: "499/day",
       specs: "125cc | 50kmpl",
       rating: 4.8,
     },
     {
-      name: "Yamaha Fascino",
+      name: "Aether",
       image:
-        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/yamaha-fascino.jpg",
-      price: "499/day",
-      specs: "125cc | 55kmpl",
+        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/new/aether.jpg",
+      price: "599/day",
+      specs: "Electric | 80 km/charge",
       rating: 4.9,
     },
     {
       name: "Honda Shine 100",
       image:
-        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/shine_100.jpg",
+        "https://95rentalsimages.s3.ap-south-1.amazonaws.com/new/shine.png",
       price: "599/day",
       specs: "100cc | 60kmpl",
       rating: 4.7,
@@ -121,27 +127,32 @@ const LandingPage = () => {
       alert("Please fill all the fields");
       return;
     }
-  
+    console.log(startDate, startTime, endDate, endTime, "log1");
+    console.log("Start Date:", startDate, "Type:", typeof startDate);
+    console.log("End Date:", endDate, "Type:", typeof endDate);
+    setLoading(true);
     const startTime24 = convertTo24HourFormat(startTime);
     const endTime24 = convertTo24HourFormat(endTime);
-  
-    const startDateTime = formatISTDateTime(startDate, startTime24);
-    const endDateTime = formatISTDateTime(endDate, endTime24);
-  
+    console.log(startTime24, endTime24, "log1");
+    // const startDateTime = formatISTDateTime(startDate, startTime24);
+    // const endDateTime = formatISTDateTime(endDate, endTime24);
+    // Combine date and time and convert to ISO format
+    const startDateTime = convertToIST(startDate, startTime24);
+    const endDateTime = convertToIST(endDate, endTime24);
+
+    console.log(startDateTime, endDateTime, "startDateTime endDateTime");
     // Create query params
     const params = new URLSearchParams();
     params.append("city", city);
-    params.append("startTime", startDateTime); // ✅ Now in IST
-    params.append("endTime", endDateTime); // ✅ Now in IST
-  
+    params.append("startTime", startDateTime || ""); // ✅ Now in IST
+    params.append("endTime", endDateTime || ""); // ✅ Now in IST
+    setLoading(false);
     // Navigate to search results page
     router.push(`/search?${params.toString()}`);
   };
-  
-  
 
   useEffect(() => {
-    verifyAuth();
+    dispatch(getUserData());
   }, []);
 
   const verifyAuth = () => {};
@@ -158,7 +169,7 @@ const LandingPage = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent"></div>
         </div>
-        <div className="container mx-auto px-4 h-full pt-24 relative z-10">
+        <div className="container mx-auto px-4 h-full pt-40 md:pt-24 relative z-10">
           <div className="h-[calc(100vh-6rem)] flex items-center">
             <div className="w-full max-w-4xl mx-auto">
               <div className="max-w-2xl text-white mb-12">
@@ -368,7 +379,10 @@ const LandingPage = () => {
                       ₹{bike.price}
                     </span>
                   </div>
-                  <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => window.scrollTo(0, 0)}>
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90"
+                    onClick={() => window.scrollTo(0, 0)}
+                  >
                     Book Now
                   </Button>
                 </div>

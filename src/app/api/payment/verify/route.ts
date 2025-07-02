@@ -1,28 +1,28 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-
 export async function POST(req: Request) {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
+    const { orderId, paymentId, signature } = await req.json();
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    // Validate required parameters
+    if (!orderId || !paymentId || !signature) {
       return NextResponse.json({ success: false, message: "Invalid payment data" }, { status: 400 });
     }
 
-    // Validate Razorpay Signature
+    // Generate Razorpay signature for verification
     const generated_signature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .createHmac("sha256", process.env.NEXT_PUBLIC_RZP_SECRET!) // Use a secure backend environment variable
+      .update(orderId + "|" + paymentId) // ✅ Correct concatenation
       .digest("hex");
 
-    if (generated_signature !== razorpay_signature) {
+    if (generated_signature !== signature) {
       return NextResponse.json({ success: false, message: "Payment verification failed" }, { status: 400 });
     }
 
-    // Find the payment record
+    // Find the payment record in the database
     const payment = await prisma.payment.findFirst({
-      where: { transactionId: razorpay_order_id },
+      where: { transactionId: orderId },
       select: { rentalId: true },
     });
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     // Update Payment Status
     await prisma.payment.update({
       where: { rentalId: payment.rentalId },
-      data: { status: "Completed", transactionId: razorpay_payment_id },
+      data: { status: "Completed", transactionId: orderId },
     });
 
     // Update Rental Status
@@ -44,8 +44,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, message: "Payment verified & ride confirmed" }, { status: 200 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Payment verification error:", error);
-    return NextResponse.json({ success: false, message: "Server error", error }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Server error", error: error.message }, { status: 500 });
   }
 }

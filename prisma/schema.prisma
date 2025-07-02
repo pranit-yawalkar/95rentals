@@ -14,12 +14,19 @@ datasource db {
 }
 
 model User {
-  userId    String    @id @default(uuid())
-  phone     String    @unique
-  name      String
-  gender    String
-  createdAt DateTime  @default(now())
-  rentals   Rental[]  // Relation to Rentals
+  userId                String      @id @default(uuid())
+  phone                 String      @unique
+  name                  String
+  email                 String      @unique
+  gender                String
+  address               String?
+  licenseDocument       String?
+  idProof               String?
+  role                  String      @default("user")
+  createdAt             DateTime    @default(now())
+  rentals               Rental[]  // Relation to Rentals
+  password              String?
+  isActive              Boolean     @default(true)
 }
 
 model Bike {
@@ -32,6 +39,7 @@ model Bike {
   imageUrl    String?
   hourlyRate  Float
   dailyRate   Float
+  location    String
   features    String[]
   isAvailable Boolean   @default(true)
   createdAt   DateTime  @default(now())

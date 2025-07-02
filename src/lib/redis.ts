@@ -15,4 +15,13 @@ export const verifyOtp = async (phoneNumber: string, otp: string) => {
   }
 };
 
+export const storeProfile = async (phoneNumber: string, profile: object) => {
+  await redis.setex(`profile:${phoneNumber}`, 300, JSON.stringify(profile)); // Store profile for 5 min
+}
+
+export const getProfile = async (phoneNumber: string) => {
+  const data = await redis.get(`profile:${phoneNumber}`);
+  return data ? JSON.parse(data) : null;
+}
+
 export default redis;

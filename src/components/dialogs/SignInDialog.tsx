@@ -19,6 +19,7 @@ const SignInDialog = ({
   isDisabled,
   errorText,
   showButton = true,
+  handleRegister,
 }: {
   isSignInDialog: boolean;
   setIsSignInDialog: React.Dispatch<React.SetStateAction<boolean>>;
@@ -29,6 +30,7 @@ const SignInDialog = ({
   isDisabled?: boolean;
   errorText?: string;
   showButton?: boolean;
+  handleRegister: () => void;
 }) => {
   return (
     <Dialog open={isSignInDialog} onOpenChange={setIsSignInDialog}>
@@ -37,7 +39,7 @@ const SignInDialog = ({
         asChild
         onClick={() => setPhoneNumber("")}
       >
-        <Button className="bg-primary hover:bg-primary/90 ml-12">
+        <Button className="bg-primary hover:bg-primary/90 md:ml-12">
           {buttonText || "Sign In"}
         </Button>
       </DialogTrigger>
@@ -83,6 +85,15 @@ const SignInDialog = ({
             Continue
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
+          <p className="text-sm text-muted-foreground text-center">
+            Don't have an account?{" "}
+            <span
+              onClick={handleRegister}
+              className="text-primary cursor-pointer"
+            >
+              Register
+            </span>
+          </p>
         </form>
       </DialogContent>
     </Dialog>

@@ -7,6 +7,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { store } from "@/store/store";
 import { StoreProvider } from "@/store/storeProvider";
+import { LoadingProvider, useLoading } from "@/context/LoadingContext";
+import LoaderWrapper from "@/components/LoaderWrapper";
+import AppShell from "@/components/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,7 +23,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "95BikeRentals - Your Journey Begins With Perfect Ride",
-  description: "95BikeRentals is a premium bike and scooter rentals in the city. Book your perfect ride now! Experience the convenience and quality of our service. Book your perfect ride now! Experience the convenience and quality of our service. Book your perfect ride now! Experience the convenience and quality of our service.",
+  description:
+    "95BikeRentals is a premium bike and scooter rentals in the city. Book your perfect ride now! Experience the convenience and quality of our service. Book your perfect ride now! Experience the convenience and quality of our service. Book your perfect ride now! Experience the convenience and quality of our service.",
 };
 
 export default function RootLayout({
@@ -34,12 +38,11 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <div className="flex flex-col min-h-screen">
-            <Navbar />
-            <main className="flex-grow">{children}</main>
-            <Footer />
+          <LoadingProvider>
+            <LoaderWrapper />
+            <AppShell>{children}</AppShell>
             <Toaster />
-          </div>
+          </LoadingProvider>
         </body>
       </html>
     </StoreProvider>

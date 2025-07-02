@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { format, differenceInDays, set } from "date-fns";
 import {
@@ -15,25 +15,38 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowLeft,
+  Upload,
+  User,
+  KeyRound,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // import Footer from '@/components/layout/Footer';
 import SignInDialog from "@/components/dialogs/SignInDialog";
-import axios from "axios";
 import { toast } from "sonner";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import OTPDialog from "@/components/dialogs/OTPDialog";
+import { login } from "@/store/reducers/authSlice";
+import ProfileDialog from "@/components/dialogs/ProfileDialog";
+import { getUserData, uploadUserDocs } from "@/store/reducers/userSlice";
+import { fetchAvailableBikes } from "@/store/reducers/bikeSlice";
+import Script from "next/script";
+import {
+  createOrderRequest,
+  verifyPaymentRequest,
+} from "@/store/reducers/paymentSlice";
+import { bookRentalRequest } from "@/store/reducers/rentalSlice";
+import {
+  loginUser,
+  registerUser,
+  verifyOtpOnLogin,
+  verifyOtpOnRegister,
+} from "@/services/authService";
 
 // Mock data for bikes
 const allBikes = [
@@ -141,33 +154,76 @@ const allBikes = [
   },
 ];
 
+const steps = [
+  {
+    id: "profile",
+    title: "Basic Details",
+    icon: User,
+  },
+  {
+    id: "verification",
+    title: "Phone Verification",
+    icon: KeyRound,
+  },
+  {
+    id: "documents",
+    title: "Documents",
+    icon: FileText,
+  },
+];
+
 export default function Page() {
+  const dispatch = useDispatch<any>();
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [isFetched, setIsFetched] = useState(false);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState(0);
-  const [showOTPDialog, setShowOTPDialog] = useState(false);
+  const [isProfileDialog, setIsProfileDialog] = useState(false);
   const [isSignInDialog, setIsSignInDialog] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [showOTPDialog, setShowOTPDialog] = useState(false);
   const [resetCount, setResetCount] = useState(60);
   const [session, setSession] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState("");
   const [successText, setSuccessText] = useState("");
+  // Profile form state
+  const [currentStep, setCurrentStep] = useState(0);
+
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+    gender: "",
+    address: "",
+    phone: "",
+    otp: ["", "", "", "", "", ""],
+    licenseDocument: null as File | null,
+    idProof: null as File | null,
+  });
   const availableBikes = useSelector((state: any) => state.bike.availableBikes);
+  const token = localStorage.getItem("authToken");
+  const user = useSelector((state: any) => state.user.user);
+
+  useEffect(() => {
+    if (token) {
+      dispatch(getUserData());
+    }
+  }, [token]);
 
   // Get bike details from ID
-  const bike = params ? availableBikes.find((b: any) => b.bikeId === params.id) : null;
-  console.log(bike, "bike");
+  const bike = params
+    ? availableBikes.find((b: any) => b.bikeId === params.id)
+    : null;
   // Get booking details from URL params
   const city = searchParams?.get("city");
-  const startDate = searchParams?.get("startDate")
-    ? new Date(searchParams.get("startDate")!)
+  const startDate = searchParams?.get("startTime")
+    ? new Date(searchParams.get("startTime")!)
     : null;
-  const endDate = searchParams?.get("endDate")
-    ? new Date(searchParams.get("endDate")!)
+  const endDate = searchParams?.get("endTime")
+    ? new Date(searchParams.get("endTime")!)
     : null;
   const startTime = searchParams?.get("startTime");
   const endTime = searchParams?.get("endTime");
@@ -176,8 +232,63 @@ export default function Page() {
   const rentalDays =
     startDate && endDate ? differenceInDays(endDate, startDate) + 1 : 0;
   const subtotal = bike ? bike.dailyRate * rentalDays : 0;
-  const gst = subtotal * 0.18; // 18% GST
-  const total = subtotal + gst;
+  // const gst = subtotal * 0.18; // 18% GST
+  const total = subtotal;
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resetCount > 0) {
+      timer = setTimeout(() => {
+        setResetCount(resetCount - 1);
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resetCount]);
+
+  useEffect(() => {
+    if (startTime && endTime && !isFetched) {
+      // Convert IST to UTC
+      const startUTC = new Date(startTime).toISOString();
+      const endUTC = new Date(endTime).toISOString();
+
+      dispatch(
+        fetchAvailableBikes({
+          startTime: startUTC,
+          endTime: endUTC,
+        })
+      ).then(() => {
+        setIsFetched(true);
+      });
+    }
+  }, [startTime, endTime, isFetched]);
+
+  const resetState = () => {
+    setCurrentStep(0);
+    setProfileForm({
+      name: "",
+      email: "",
+      gender: "",
+      address: "",
+      phone: "",
+      otp: ["", "", "", "", "", ""],
+      licenseDocument: null,
+      idProof: null,
+    });
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length <= 1 && /^\d*$/.test(value)) {
+      const newOtp = [...otp];
+      newOtp[index] = value;
+      setOtp(newOtp);
+
+      // Auto-focus next input
+      if (value !== "" && index < 5) {
+        const nextInput = document.getElementById(`otp-${index + 1}`);
+        nextInput?.focus();
+      }
+    }
+  };
 
   if (!bike) {
     return (
@@ -203,45 +314,229 @@ export default function Page() {
       return;
     }
 
-    // For demo purposes, we'll just show the login dialog
-    setIsSignInDialog(true);
+    if (Object.keys(user).length === 0) {
+      setIsProfileDialog(true);
+      return;
+    }
+
+    initiatePayment();
+
+    // initiatePayment();
   };
 
-  const userSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await axios.post("/api/auth/login", {
-      phoneNumber: `+91${phoneNumber}`,
-    });
-    console.log(res, "res lgoin");
-    if (res?.status === 200) {
-      setIsSignInDialog(false);
-      setShowOTPDialog(true);
-      setResetCount(60);
+  const userSignIn = async (e?: React.FormEvent) => {
+    try {
+      e?.preventDefault();
+      const res = await loginUser(phoneNumber);
+      if (res?.status === 200) {
+        setCurrentStep((prev) => prev + 1);
+        toast.success("OTP sent successfully!");
+        setShowOTPDialog(true);
+        setResetCount(60);
+      }
+    } catch (error: any) {
+      console.log(error);
+      toast.error(error.message);
     }
   };
 
-  const verifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await axios.post("/api/auth/verify-otp", {
-      phoneNumber: `+91${phoneNumber}`,
-      otp: otp.join(""),
-    });
-    if (res.data.token) {
-      setSession(res.data.token);
-      localStorage.setItem("authToken", res.data.token);
-      setShowOTPDialog(false);
-      setOtp(["", "", "", "", "", ""]);
-      toast.success("Logged In Successfully!");
-    } else {
-      alert("Invalid OTP");
+  const userRegister = async () => {
+    try {
+      const res = await registerUser(profileForm);
+      if (res?.status === 200) {
+        setCurrentStep((prev) => prev + 1);
+        toast.success("OTP sent successfully!");
+        // setShowOTPDialog(true);
+        setResetCount(60);
+      }
+    } catch (error: any) {
+      console.log(error);
+      toast.error(error.message);
+    }
+  };
+
+  const verifyLoginOtp = async (e?: React.FormEvent) => {
+    try {
+      e?.preventDefault();
+      const res = await verifyOtpOnLogin(phoneNumber, otp.join(""));
+      if (res.data.token) {
+        setSession(res.data.token);
+        localStorage.setItem("authToken", res.data.token);
+        login(res.data.token);
+        await dispatch(getUserData());
+        setOtp(["", "", "", "", "", ""]);
+        setPhoneNumber("");
+        setShowOTPDialog(false);
+        setIsSignInDialog(false);
+        toast.success("OTP verified successfully!");
+      } else {
+        alert("Invalid OTP");
+      }
+    } catch (error: any) {
+      console.log(error);
+      toast.error(error.message);
+    }
+  };
+
+  const verifyRegisterOtp = async () => {
+    try {
+      const res = await verifyOtpOnRegister(
+        profileForm.phone,
+        profileForm.otp.join("")
+      );
+      if (res.data.token) {
+        setSession(res.data.token);
+        localStorage.setItem("authToken", res.data.token);
+        login(res.data.token);
+        await dispatch(getUserData());
+        setProfileForm((prev) => ({ ...prev, otp: ["", "", "", "", "", ""] }));
+        setCurrentStep((prev) => prev + 1);
+        toast.success("OTP verified successfully!");
+      } else {
+        alert("Invalid OTP");
+      }
+    } catch (error: any) {
+      console.log(error);
+      toast.error(error.message);
+    }
+  };
+
+  const uploadDocs = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("license", profileForm.licenseDocument!);
+      formData.append("idProof", profileForm.idProof!);
+      const res = await dispatch(uploadUserDocs(formData));
+      if (res?.payload?.error) {
+        toast.error(res?.payload?.error);
+        return;
+      }
+      toast.success("Documents uploaded successfully!");
+      setIsProfileDialog(false);
+      resetState();
+    } catch (error) {
+      console.log(error);
+      toast.error("Error uploading documents");
+    }
+  };
+
+  const handleResendOtp = () => {
+    setResetCount(60);
+    userSignIn();
+  };
+
+  const handleNextStep = () => {
+    // Validate current step
+    if (currentStep === 0) {
+      if (
+        !profileForm.name ||
+        !profileForm.email ||
+        !profileForm.gender ||
+        !profileForm.phone ||
+        !profileForm.address
+      ) {
+        alert("Please fill all the required fields");
+        return;
+      }
+
+      userRegister();
+    } else if (currentStep === 1) {
+      if (!profileForm.phone || !profileForm.otp) {
+        alert("Please complete phone verification");
+        return;
+      }
+
+      verifyRegisterOtp();
+    } else if (currentStep === 2) {
+      if (!profileForm.licenseDocument || !profileForm.idProof) {
+        alert("Please upload all required documents");
+        return;
+      }
+      uploadDocs();
+    }
+  };
+
+  const initiatePayment = async () => {
+    try {
+      if (!params || !startTime || !endTime) {
+        return;
+      }
+      const rentalRes = await dispatch(
+        bookRentalRequest({
+          bikeId: params.id as string,
+          startTime,
+          endTime,
+          totalAmount: Math.round(total),
+        })
+      );
+      console.log(rentalRes, "rentalRes");
+      if (rentalRes?.error?.message) {
+        toast.error("Error booking rental");
+        return;
+      }
+      const orderRes = await dispatch(
+        createOrderRequest({
+          rentalId: rentalRes?.payload?.rental?.rentalId as string,
+          amount: rentalRes?.payload?.rental?.totalAmount as number,
+        })
+      );
+      console.log(orderRes, "orderRes");
+      if (orderRes?.error?.message) {
+        toast.error("Error creating order");
+        return;
+      }
+      // const data = res?.payload;
+      const options = {
+        key: process.env.NEXT_PUBLIC_RZP_KEY,
+        amount: orderRes?.payload?.order?.amount,
+        currency: "INR",
+        name: "95BikeRentals",
+        description: "Bike Rental Payment",
+        order_id: orderRes?.payload?.order?.id as string,
+        handler: async function (response: any) {
+          console.log(response, "response");
+          const paymentId = response.razorpay_payment_id;
+          const orderId = response.razorpay_order_id;
+          const signature = response.razorpay_signature;
+          const res = await dispatch(
+            verifyPaymentRequest({
+              paymentId,
+              orderId,
+              signature,
+            })
+          );
+          if (res?.error?.message) {
+            toast.error("Error verifying payment");
+            return;
+          }
+
+          toast.success("Thanks for booking with 95BikeRentals!");
+          router.push("/rentals");
+        },
+        prefill: {
+          name: user ? user?.name : "Guest",
+          email: user ? user?.email : "",
+          contact: user ? user?.phone : "",
+        },
+      };
+      console.log(options, "options");
+      const rzp1 = new (window as any).Razorpay(options);
+      rzp1.open();
+    } catch (error) {
+      console.log(error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       <div className="container mx-auto px-4 py-8">
         {/* Back Button */}
-        <Button variant="ghost" className="mb-6 mt-12" onClick={() => router.back()}>
+        <Button
+          variant="ghost"
+          className="mb-6 mt-12"
+          onClick={() => router.back()}
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Search
         </Button>
@@ -272,11 +567,11 @@ export default function Page() {
                   <TabsContent value="overview">
                     <div className="space-y-4">
                       <div className="flex items-center space-x-4">
-                        <div className="flex items-center">
+                        {/* <div className="flex items-center">
                           <Star className="w-5 h-5 text-yellow-400 fill-yellow-400 mr-1" />
                           <span className="font-medium">{bike.rating}</span>
                         </div>
-                        <Separator orientation="vertical" className="h-4" />
+                        <Separator orientation="vertical" className="h-4" /> */}
                         <div className="text-muted-foreground">
                           {bike.specs}
                         </div>
@@ -298,37 +593,15 @@ export default function Page() {
                     </ul>
                   </TabsContent>
 
-                  {/* <TabsContent value="locations">
+                  <TabsContent value="locations">
                     <div className="space-y-4">
-                      {bike.locations.map((location, index) => (
-                        <Card key={index}>
-                          <CardContent className="pt-6">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h3 className="font-medium mb-2">
-                                  {location.name}
-                                </h3>
-                                <p className="text-sm text-muted-foreground mb-2">
-                                  <MapPin className="w-4 h-4 inline mr-1" />
-                                  {location.address}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  <Phone className="w-4 h-4 inline mr-1" />
-                                  {location.phone}
-                                </p>
-                              </div>
-                              <Button
-                                variant="outline"
-                                onClick={() => setSelectedLocation(index)}
-                              >
-                                Select
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                      {/* location */}
+                      <div className="flex items-center">
+                        <MapPin className="w-5 h-5 text-primary mr-2" />
+                        <span>{bike.location}</span>
+                      </div>
                     </div>
-                  </TabsContent> */}
+                  </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
@@ -350,7 +623,7 @@ export default function Page() {
                       government ID proof
                     </span>
                   </li>
-                  <li className="flex items-start">
+                  {/* <li className="flex items-start">
                     <CheckCircle2 className="w-5 h-5 text-primary mr-2 mt-0.5" />
                     <span>
                       Security deposit of ₹{bike.securityDeposit} will be
@@ -362,7 +635,7 @@ export default function Page() {
                     <span>
                       Full tank fuel will be provided, return with full tank
                     </span>
-                  </li>
+                  </li> */}
                   <li className="flex items-start">
                     <CheckCircle2 className="w-5 h-5 text-primary mr-2 mt-0.5" />
                     <span>Wear helmet at all times while riding</span>
@@ -392,7 +665,10 @@ export default function Page() {
                             {startDate
                               ? format(startDate, "PPP")
                               : "Not selected"}{" "}
-                            at {startTime ? new Date(startTime).toTimeString() : "Not selected"}
+                            at{" "}
+                            {startTime
+                              ? new Date(startTime).toTimeString()
+                              : "Not selected"}
                           </p>
                         </div>
                       </div>
@@ -402,7 +678,10 @@ export default function Page() {
                           <p className="font-medium">Trip End</p>
                           <p className="text-muted-foreground">
                             {endDate ? format(endDate, "PPP") : "Not selected"}{" "}
-                            at {endTime ? new Date(endTime).toTimeString() : "Not selected"}
+                            at{" "}
+                            {endTime
+                              ? new Date(endTime).toTimeString()
+                              : "Not selected"}
                           </p>
                         </div>
                       </div>
@@ -410,9 +689,9 @@ export default function Page() {
                         <MapPin className="w-4 h-4 mr-2 mt-1" />
                         <div>
                           <p className="font-medium">Pickup Location</p>
-                          {/* <p className="text-muted-foreground">
-                            {bike.locations[selectedLocation].name}
-                          </p> */}
+                          <p className="text-muted-foreground">
+                            {bike.location}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -430,19 +709,19 @@ export default function Page() {
                         </span>
                         <span>₹{subtotal}</span>
                       </div>
-                      <div className="flex justify-between">
+                      {/* <div className="flex justify-between">
                         <span className="text-muted-foreground">GST (18%)</span>
                         <span>₹{gst.toFixed(2)}</span>
-                      </div>
+                      </div> */}
                       <Separator className="my-4" />
                       <div className="flex justify-between font-medium">
                         <span>Total Amount</span>
                         <span>₹{total.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between text-muted-foreground">
+                      {/* <div className="flex justify-between text-muted-foreground">
                         <span>Security Deposit</span>
                         <span>₹{bike.securityDeposit}</span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 
@@ -484,15 +763,58 @@ export default function Page() {
       </div>
 
       {/* Login Dialog */}
-          <SignInDialog
-            isSignInDialog={isSignInDialog}
-            setIsSignInDialog={setIsSignInDialog}
-            handlePhoneSubmit={userSignIn}
-            phoneNumber={phoneNumber}
-            setPhoneNumber={setPhoneNumber}
-            showButton={false}
-          />
+      <SignInDialog
+        isSignInDialog={isSignInDialog}
+        setIsSignInDialog={setIsSignInDialog}
+        handlePhoneSubmit={userSignIn}
+        phoneNumber={phoneNumber}
+        setPhoneNumber={setPhoneNumber}
+        showButton={false}
+        handleRegister={() => {
+          setIsSignInDialog(false);
+          setIsProfileDialog(true);
+          setCurrentStep(0);
+          setProfileForm((prev) => ({
+            ...prev,
+            otp: ["", "", "", "", "", ""],
+          }));
+        }}
+      />
 
+      {/* OTP Dialog */}
+      <OTPDialog
+        showOTPDialog={showOTPDialog}
+        setShowOTPDialog={setShowOTPDialog}
+        handleOTPSubmit={verifyLoginOtp}
+        phoneNumber={phoneNumber}
+        otp={otp}
+        onResend={handleResendOtp}
+        handleOtpChange={handleOtpChange}
+        resendCount={resetCount}
+      />
+
+      <ProfileDialog
+        steps={steps}
+        currentStep={currentStep}
+        setCurrentStep={setCurrentStep}
+        isProfileDialog={isProfileDialog}
+        setIsProfileDialog={setIsProfileDialog}
+        profileForm={profileForm}
+        setProfileForm={setProfileForm}
+        handleNextStep={handleNextStep}
+        handleResendOtp={handleResendOtp}
+        errorText={errorText}
+        otpCounter={resetCount}
+        handleLogin={() => {
+          setIsProfileDialog(false);
+          setIsSignInDialog(true);
+          setCurrentStep(0);
+          setProfileForm((prev) => ({
+            ...prev,
+            otp: ["", "", "", "", "", ""],
+          }));
+        }}
+      />
 
       {/* <Footer /> */}
     </div>

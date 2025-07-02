@@ -6,7 +6,7 @@ import razorpay from "@/lib/razorpay";
 export async function POST(req: Request) {
   try {
     const { rentalId, amount } = await req.json();
-
+    console.log(rentalId, amount, typeof rentalId, typeof amount);
     if (!rentalId || !amount) {
       return NextResponse.json({ success: false, message: "All fields are required" }, { status: 400 });
     }

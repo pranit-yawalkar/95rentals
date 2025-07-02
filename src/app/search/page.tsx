@@ -47,6 +47,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { getAvailableBikes } from "@/services/bikeService";
 import { fetchAvailableBikes } from "@/store/reducers/bikeSlice";
 import { convertTo24HourFormat, formatISTDateTime } from "@/lib/utils";
+import { useLoading } from "@/context/LoadingContext";
 
 // Available models for filtering
 const bikeModels = [
@@ -102,9 +103,9 @@ const BikeSearchContent = () => {
   const [isFetched, setIsFetched] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { setLoading } = useLoading();
   const [phoneNumber, setPhoneNumber] = useState("");
   const availableBikes = useSelector((state: any) => state.bike.availableBikes);
-  console.log(availableBikes, "availableBikes");
   // Search parameters
   const [params, setParams] = useState({
     city: "",
@@ -120,7 +121,6 @@ const BikeSearchContent = () => {
   const [sortOption, setSortOption] = useState("recommended");
   const [filteredBikes, setFilteredBikes] = useState<any[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  console.log(params, "filteredBikes");
   // Initialize search parameters from URL
   useEffect(() => {
     if (searchParams) {
@@ -154,6 +154,7 @@ const BikeSearchContent = () => {
 
   useEffect(() => {
     if (params.startTime && params.endTime && !isFetched) {
+      setLoading(true);
       // Convert IST to UTC
       const startUTC = new Date(params.startTime).toISOString();
       const endUTC = new Date(params.endTime).toISOString();
@@ -165,6 +166,9 @@ const BikeSearchContent = () => {
         })
       ).then(() => {
         setIsFetched(true);
+        setLoading(false);
+      }).catch(() => {
+        setLoading(false);
       });
     }
   }, [params, isFetched]);
