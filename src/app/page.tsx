@@ -153,6 +153,7 @@ export default function Home() {
   };
 
   useEffect(() => {
+    console.log(process.env.NEXT_PUBLIC_REDIS_URL, "redis url");
     dispatch(getUserData());
   }, []);
 
