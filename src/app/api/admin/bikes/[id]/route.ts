@@ -5,9 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 // /app/api/admin/bikes/[id]/route.ts
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+  req: NextRequest,
+  context: any
+){
   try {
     const auth = isAdmin(req as NextRequest);
     if (!auth.success) {
@@ -17,7 +17,9 @@ export async function PUT(
       );
     }
 
-    if (!params.id) {
+    const { id } = context.params;
+
+    if (!id) {
       return NextResponse.json(
         { success: false, message: "Bike ID is required" },
         { status: 400 }
@@ -65,7 +67,7 @@ export async function PUT(
     }
 
     const existingBike = await prisma.bike.findUnique({
-      where: { bikeId: params.id },
+      where: { bikeId: id },
     });
 
     if (!existingBike) {
@@ -77,7 +79,7 @@ export async function PUT(
 
     // if imageUrl is null, then keep the existing imageUrl
     const bike = await prisma.bike.update({
-      where: { bikeId: params.id },
+      where: { bikeId: id },
       data: {
         name,
         type,
@@ -103,8 +105,8 @@ export async function PUT(
 
 /** Delete a bike */
 export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ bikeId: string }> }
+  req: NextRequest,
+  context: any
 ) {
   const auth = isAdmin(req as NextRequest);
   if (!auth.success) {
@@ -113,10 +115,10 @@ export async function DELETE(
       { status: 401 }
     );
   }
-  const { bikeId } = await params;
+  const { id } = context.params;
 
   try {
-    await prisma.bike.delete({ where: { bikeId: String(bikeId) } });
+    await prisma.bike.delete({ where: { bikeId: String(id) } });
 
     return NextResponse.json(
       { success: true, message: "Bike deleted successfully" },
