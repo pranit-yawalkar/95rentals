@@ -440,7 +440,7 @@ const BikeSearchContent = () => {
                 </h3>
                 <Slider
                   defaultValue={[200, 1000]}
-                  min={200}
+                  min={1}
                   max={1000}
                   step={50}
                   value={priceRange}
